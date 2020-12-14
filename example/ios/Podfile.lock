@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - thaw (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - thaw (from `.symlinks/plugins/thaw/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  thaw:
+    :path: ".symlinks/plugins/thaw/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  thaw: 3b4ea6568cd30b9c81a5eacbcb52c59949a3e3ee
+
+PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
+
+COCOAPODS: 1.8.4

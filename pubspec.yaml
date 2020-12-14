@@ -30,6 +30,8 @@ flutter:
       android:
         package: com.littlegnal.thaw
         pluginClass: ThawPlugin
+      ios:
+        pluginClass: ThawPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
