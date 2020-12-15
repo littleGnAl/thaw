@@ -12,6 +12,10 @@ import Flutter
         // Used to connect plugins (only if you have plugins with iOS platform code).
         GeneratedPluginRegistrant.register(with: self.flutterEngine);
         
+        
+        JustPlugin.register(with: self.flutterEngine.registrar(forPlugin: "JustPlugin") as! FlutterPluginRegistrar)
+        
+        
         window = UIWindow(frame: UIScreen.main.bounds)
         // Create a view controller
         let viewController = FlutterViewController(engine: flutterEngine, nibName: nil, bundle: nil)

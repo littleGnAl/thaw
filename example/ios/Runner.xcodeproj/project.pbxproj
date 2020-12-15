@@ -14,6 +14,7 @@
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		99EDC153A99A5D15C85BD476 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 383E4F4B5BAF20FCC2F11103 /* Pods_Runner.framework */; };
 		FF84DCBE2587DB1600AE5A24 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF84DCBD2587DB1600AE5A24 /* ViewController.swift */; };
+		FF84DCC025892D1E00AE5A24 /* JustPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF84DCBF25892D1E00AE5A24 /* JustPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,6 +48,7 @@
 		CB2CE5AA149563CE18669FD6 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		D551D9AE2846BF0ACD6BF76B /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		FF84DCBD2587DB1600AE5A24 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		FF84DCBF25892D1E00AE5A24 /* JustPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JustPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +112,7 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				FF84DCBD2587DB1600AE5A24 /* ViewController.swift */,
+				FF84DCBF25892D1E00AE5A24 /* JustPlugin.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -270,6 +273,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FF84DCC025892D1E00AE5A24 /* JustPlugin.swift in Sources */,
 				FF84DCBE2587DB1600AE5A24 /* ViewController.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
