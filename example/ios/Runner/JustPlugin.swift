@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import thaw
 
 extension UIApplication {
     class func getTopViewController(base: UIViewController? = UIApplication.shared.keyWindow?.rootViewController) -> UIViewController? {
@@ -36,7 +37,7 @@ public class JustPlugin: NSObject, FlutterPlugin {
         if let topVC = UIApplication.getTopViewController() {
             let flutterEngine = (UIApplication.shared.delegate as! AppDelegate).flutterEngine
             let flutterViewController =
-                FlutterViewController(engine: flutterEngine, nibName: nil, bundle: nil)
+                ThawFlutterViewController(engine: flutterEngine, nibName: nil, bundle: nil)
             flutterViewController.modalPresentationStyle = .overFullScreen
             topVC.present(flutterViewController, animated: true, completion: nil)
         }

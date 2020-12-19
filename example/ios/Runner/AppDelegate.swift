@@ -1,5 +1,6 @@
 import UIKit
 import Flutter
+import thaw
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -18,7 +19,7 @@ import Flutter
         
         window = UIWindow(frame: UIScreen.main.bounds)
         // Create a view controller
-        let viewController = FlutterViewController(engine: flutterEngine, nibName: nil, bundle: nil)
+        let viewController = ThawFlutterViewController(engine: flutterEngine, nibName: nil, bundle: nil)
         // Assign the view controller as `window`'s root view controller
         window?.rootViewController = viewController
         // Show the window
