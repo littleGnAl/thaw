@@ -33,6 +33,7 @@ open class ThawFlutterViewController: FlutterViewController {
     }
     
     open override func viewWillDisappear(_ animated: Bool) {
+        // Borrow from  https://github.com/gfaraday/g_faraday/blob/4bb3036f78fab50cc986a1ae18402e3eab6e1242/ios/Classes/FaradayFlutterViewController.swift#L109
         if let p = previousFlutterViewController, p.isShowing {
             p.viewWillAppear(false)
             p.viewDidLayoutSubviews()
