@@ -2,6 +2,10 @@
 
 A new Flutter project.
 
+```
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/thaw_test.dart
+```
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
