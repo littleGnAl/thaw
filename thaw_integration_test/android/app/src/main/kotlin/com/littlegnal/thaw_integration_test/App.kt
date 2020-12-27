@@ -29,8 +29,6 @@
 package com.littlegnal.thaw_integration_test
 
 import io.flutter.app.FlutterApplication
-import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.android.ThawFlutterFragment
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -46,7 +44,5 @@ class App : FlutterApplication() {
             .executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault())
         FlutterEngineCache.getInstance().put("cache_engine", flutterEngine)
         flutterEngine.plugins.add(JustPlugin())
-
-        ThawFlutterFragment.withCachedEngine("cache_engine").build<>()
     }
 }
