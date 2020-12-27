@@ -1,0 +1,42 @@
+
+flutter_container: &flutter_container
+  container:
+    image: cirrusci/flutter:latest
+    cpu: 8
+    memory: 16G
+    kvm: true
+
+flutter_macos_container: &flutter_macos_container
+  osx_instance:
+    image: catalina-xcode-12.1
+
+android_integratinon_test_task:
+  <<: *flutter_container
+  create_device_script:
+    - sdkmanager --install "system-images;android-30;google_apis;x86"
+    - echo no | avdmanager create avd -n test -k "system-images;android-30;google_apis;x86"
+  start_emulator_background_script:
+    $ANDROID_HOME/emulator/emulator
+        -avd test
+        -no-audio
+        -no-window
+  wait_for_emulator_script:
+    adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 3; done; input keyevent 82'
+  disable_animations_script:
+    - adb shell settings put global window_animation_scale 0.0
+    - adb shell settings put global transition_animation_scale 0.0
+    - adb shell settings put global animator_duration_scale 0.0
+  run_android_test_script:
+    - flutter doctor -v
+    - cd thaw_integration_test
+    - flutter drive --driver=test_driver/integration_test.dart --target=integration_test/thaw_test.dart
+
+ios_integration_test_task:
+  <<: *flutter_macos_container
+  create_ios_simulator_script:
+    - xcrun simctl list
+    - xcrun simctl create Flutter-iPhone com.apple.CoreSimulator.SimDeviceType.iPhone-X com.apple.CoreSimulator.SimRuntime.iOS-14-1 | xargs xcrun simctl boot
+  run_ios_test_script:
+    - flutter doctor -v
+    - cd thaw_integration_test
+    - flutter drive --driver=test_driver/integration_test.dart --target=integration_test/thaw_test.dart
