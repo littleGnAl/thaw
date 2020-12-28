@@ -1,4 +1,6 @@
 # thaw
+[![Build Status](https://api.cirrus-ci.com/github/littleGnAl/thaw.svg)](https://cirrus-ci.com/github/littleGnAl/thaw) 
+[![pub package](https://img.shields.io/pub/v/thaw.svg)](https://pub.dev/packages/thaw)
 
 A single-cache `FlutterEngine` solution for the [Add-to-app](https://flutter.dev/docs/development/add-to-app) scenario.
 
