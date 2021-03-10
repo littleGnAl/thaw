@@ -43,6 +43,7 @@ import static io.flutter.embedding.android.FlutterActivityLaunchConfigs.EXTRA_CA
 import static io.flutter.embedding.android.FlutterActivityLaunchConfigs.EXTRA_DESTROY_ENGINE_WITH_ACTIVITY;
 import static io.flutter.embedding.android.FlutterActivityLaunchConfigs.EXTRA_ENABLE_STATE_RESTORATION;
 import static io.flutter.embedding.android.FlutterActivityLaunchConfigs.EXTRA_INITIAL_ROUTE;
+import static io.flutter.embedding.android.FlutterActivityLaunchConfigs.HANDLE_DEEPLINKING_META_DATA_KEY;
 import static io.flutter.embedding.android.FlutterActivityLaunchConfigs.INITIAL_ROUTE_META_DATA_KEY;
 import static io.flutter.embedding.android.FlutterActivityLaunchConfigs.NORMAL_THEME_META_DATA_KEY;
 import static io.flutter.embedding.android.FlutterActivityLaunchConfigs.SPLASH_SCREEN_META_DATA_KEY;
@@ -434,11 +435,11 @@ public class ThawFlutterActivity extends Activity
 
         super.onCreate(savedInstanceState);
 
-        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE);
-
         delegate = new ThawFlutterActivityAndFragmentDelegate(this);
         delegate.onAttach(this);
-        delegate.onActivityCreated(savedInstanceState);
+        delegate.onRestoreInstanceState(savedInstanceState);
+
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE);
 
         configureWindowForTransparency();
         setContentView(createFlutterView());
@@ -476,10 +477,9 @@ public class ThawFlutterActivity extends Activity
      */
     private void switchLaunchThemeForNormalTheme() {
         try {
-            ActivityInfo activityInfo =
-                    getPackageManager().getActivityInfo(getComponentName(), PackageManager.GET_META_DATA);
-            if (activityInfo.metaData != null) {
-                int normalThemeRID = activityInfo.metaData.getInt(NORMAL_THEME_META_DATA_KEY, -1);
+            Bundle metaData = getMetaData();
+            if (metaData != null) {
+                int normalThemeRID = metaData.getInt(NORMAL_THEME_META_DATA_KEY, -1);
                 if (normalThemeRID != -1) {
                     setTheme(normalThemeRID);
                 }
@@ -515,10 +515,8 @@ public class ThawFlutterActivity extends Activity
     @SuppressWarnings("deprecation")
     private Drawable getSplashScreenFromManifest() {
         try {
-            ActivityInfo activityInfo =
-                    getPackageManager().getActivityInfo(getComponentName(), PackageManager.GET_META_DATA);
-            Bundle metadata = activityInfo.metaData;
-            int splashScreenId = metadata != null ? metadata.getInt(SPLASH_SCREEN_META_DATA_KEY) : 0;
+            Bundle metaData = getMetaData();
+            int splashScreenId = metaData != null ? metaData.getInt(SPLASH_SCREEN_META_DATA_KEY) : 0;
             return splashScreenId != 0
                     ? Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP
                     ? getResources().getDrawable(splashScreenId, getTheme())
@@ -561,18 +559,18 @@ public class ThawFlutterActivity extends Activity
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START);
+        delegate.onStart();
+    }
+
+    @Override
     protected void onRestart() {
         super.onRestart();
         if (delegate.isDetached()) {
             delegate.reattach();
         }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START);
-        delegate.onStart();
     }
 
     @Override
@@ -612,14 +610,41 @@ public class ThawFlutterActivity extends Activity
         }
     }
 
+    /**
+     * Irreversibly release this activity's control of the {@link FlutterEngine} and its
+     * subcomponents.
+     *
+     * <p>Calling will disconnect this activity's view from the Flutter renderer, disconnect this
+     * activity from plugins' {@link ActivityControlSurface}, and stop system channel messages from
+     * this activity.
+     *
+     * <p>After calling, this activity should be disposed immediately and not be re-used.
+     */
+    private void release() {
+        delegate.onDestroyView();
+        delegate.onDetach();
+        delegate.release();
+        delegate = null;
+    }
+
+    @Override
+    public void detachFromFlutterEngine() {
+        Log.v(
+                TAG,
+                "ThawFlutterActivity "
+                        + this
+                        + " connection to the engine "
+                        + getFlutterEngine()
+                        + " evicted by another attaching activity");
+        delegate.onDestroyView();
+        delegate.onDetach();
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (stillAttachedForEvent("onDestroy")) {
-            delegate.onDestroyView();
-            delegate.onDetach();
-            delegate.release();
-            delegate = null;
+            release();
         }
         lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY);
     }
@@ -748,27 +773,6 @@ public class ThawFlutterActivity extends Activity
         }
     }
 
-    @Override
-    public void detachFromFlutterEngine() {
-        Log.v(
-            TAG,
-            "ThawFlutterActivity "
-                    + this
-                    + " connection to the engine "
-                    + getFlutterEngine()
-                    + " evicted by another attaching activity");
-        delegate.onDestroyView();
-        delegate.onDetach();
-    }
-
-    private boolean stillAttachedForEvent(String event) {
-        if (delegate.isDetached()) {
-            Log.v(TAG, "ThawFlutterActivity " + hashCode() + " " + event + " called after release.");
-            return false;
-        }
-        return true;
-    }
-
     /**
      * The Dart entrypoint that will be executed as soon as the Dart snapshot is loaded.
      *
@@ -781,11 +785,9 @@ public class ThawFlutterActivity extends Activity
     @NonNull
     public String getDartEntrypointFunctionName() {
         try {
-            ActivityInfo activityInfo =
-                    getPackageManager().getActivityInfo(getComponentName(), PackageManager.GET_META_DATA);
-            Bundle metadata = activityInfo.metaData;
+            Bundle metaData = getMetaData();
             String desiredDartEntrypoint =
-                    metadata != null ? metadata.getString(DART_ENTRYPOINT_META_DATA_KEY) : null;
+                    metaData != null ? metaData.getString(DART_ENTRYPOINT_META_DATA_KEY) : null;
             return desiredDartEntrypoint != null ? desiredDartEntrypoint : DEFAULT_DART_ENTRYPOINT;
         } catch (PackageManager.NameNotFoundException e) {
             return DEFAULT_DART_ENTRYPOINT;
@@ -812,22 +814,22 @@ public class ThawFlutterActivity extends Activity
      * have control over the incoming {@code Intent}.
      *
      * <p>Subclasses may override this method to directly control the initial route.
+     *
+     * <p>If this method returns null and the {@code shouldHandleDeeplinking} returns true, the
+     * initial route is derived from the {@code Intent} through the Intent.getData() instead.
      */
-    @NonNull
     public String getInitialRoute() {
         if (getIntent().hasExtra(EXTRA_INITIAL_ROUTE)) {
             return getIntent().getStringExtra(EXTRA_INITIAL_ROUTE);
         }
 
         try {
-            ActivityInfo activityInfo =
-                    getPackageManager().getActivityInfo(getComponentName(), PackageManager.GET_META_DATA);
-            Bundle metadata = activityInfo.metaData;
+            Bundle metaData = getMetaData();
             String desiredInitialRoute =
-                    metadata != null ? metadata.getString(INITIAL_ROUTE_META_DATA_KEY) : null;
-            return desiredInitialRoute != null ? desiredInitialRoute : DEFAULT_INITIAL_ROUTE;
+                    metaData != null ? metaData.getString(INITIAL_ROUTE_META_DATA_KEY) : null;
+            return desiredInitialRoute;
         } catch (PackageManager.NameNotFoundException e) {
-            return DEFAULT_INITIAL_ROUTE;
+            return null;
         }
     }
 
@@ -927,15 +929,19 @@ public class ThawFlutterActivity extends Activity
         return delegate.getFlutterEngine();
     }
 
+    /** Retrieves the meta data specified in the AndroidManifest.xml. */
+    @Nullable
+    protected Bundle getMetaData() throws PackageManager.NameNotFoundException {
+        ActivityInfo activityInfo =
+                getPackageManager().getActivityInfo(getComponentName(), PackageManager.GET_META_DATA);
+        return activityInfo.metaData;
+    }
+
     @Nullable
     @Override
     public PlatformPlugin providePlatformPlugin(
             @Nullable Activity activity, @NonNull FlutterEngine flutterEngine) {
-        if (activity != null) {
-            return new PlatformPlugin(getActivity(), flutterEngine.getPlatformChannel());
-        } else {
-            return null;
-        }
+        return new PlatformPlugin(getActivity(), flutterEngine.getPlatformChannel(), this);
     }
 
     /**
@@ -987,7 +993,7 @@ public class ThawFlutterActivity extends Activity
      * <p>Returning false from this method does not preclude a {@link FlutterEngine} from being
      * attaching to a {@code ThawFlutterActivity} - it just prevents the attachment from happening
      * automatically. A developer can choose to subclass {@code ThawFlutterActivity} and then invoke
-     * {@link ActivityControlSurface#attachToActivity(Activity, Lifecycle)} and {@link
+     * {@link ActivityControlSurface#attachToActivity(ExclusiveAppComponent, Lifecycle)} and {@link
      * ActivityControlSurface#detachFromActivity()} at the desired times.
      *
      * <p>One reason that a developer might choose to manually manage the relationship between the
@@ -1001,6 +1007,26 @@ public class ThawFlutterActivity extends Activity
     @Override
     public boolean shouldAttachEngineToActivity() {
         return true;
+    }
+
+    /**
+     * Whether to handle the deeplinking from the {@code Intent} automatically if the {@code
+     * getInitialRoute} returns null.
+     *
+     * <p>The default implementation looks {@code <meta-data>} called {@link
+     * FlutterActivityLaunchConfigs#HANDLE_DEEPLINKING_META_DATA_KEY} within the Android manifest
+     * definition for this {@code ThawFlutterActivity}.
+     */
+    @Override
+    public boolean shouldHandleDeeplinking() {
+        try {
+            Bundle metaData = getMetaData();
+            boolean shouldHandleDeeplinking =
+                    metaData != null ? metaData.getBoolean(HANDLE_DEEPLINKING_META_DATA_KEY) : false;
+            return shouldHandleDeeplinking;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
     }
 
     @Override
@@ -1036,6 +1062,20 @@ public class ThawFlutterActivity extends Activity
         }
         if (getCachedEngineId() != null) {
             // Prevent overwriting the existing state in a cached engine with restoration state.
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean popSystemNavigator() {
+        // Hook for subclass. No-op if returns false.
+        return false;
+    }
+
+    private boolean stillAttachedForEvent(String event) {
+        if (delegate == null) {
+            Log.v(TAG, "ThawFlutterActivity " + hashCode() + " " + event + " called after release.");
             return false;
         }
         return true;
