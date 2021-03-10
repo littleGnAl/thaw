@@ -1074,7 +1074,7 @@ public class ThawFlutterActivity extends Activity
     }
 
     private boolean stillAttachedForEvent(String event) {
-        if (delegate == null) {
+        if (delegate.isDetached()) {
             Log.v(TAG, "ThawFlutterActivity " + hashCode() + " " + event + " called after release.");
             return false;
         }

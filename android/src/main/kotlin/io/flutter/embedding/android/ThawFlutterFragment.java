@@ -1145,7 +1145,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
     }
 
     private boolean stillAttachedForEvent(String event) {
-        if (delegate == null) {
+        if (delegate.isDetached()) {
             Log.v(TAG, "ThawFlutterFragment " + hashCode() + " " + event + " called after release.");
             return false;
         }
