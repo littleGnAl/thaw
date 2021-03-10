@@ -559,18 +559,18 @@ public class ThawFlutterActivity extends Activity
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START);
-        delegate.onStart();
-    }
-
-    @Override
     protected void onRestart() {
         super.onRestart();
         if (delegate.isDetached()) {
             delegate.reattach();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START);
+        delegate.onStart();
     }
 
     @Override
