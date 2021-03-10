@@ -8,7 +8,7 @@ flutter_container: &flutter_container
 
 flutter_macos_container: &flutter_macos_container
   osx_instance:
-    image: catalina-xcode-12.1
+    image: big-sur-xcode-12.4
 
 android_integratinon_test_task:
   <<: *flutter_container
