@@ -6,21 +6,21 @@
 // Redistribution under:
 // Copyright (c) 2020, Littlegnal
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this
 // list of conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 // this list of conditions and the following disclaimer in the documentation
 // and/or other materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 // AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 // IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -118,6 +118,8 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
     protected static final String ARG_DART_ENTRYPOINT = "dart_entrypoint";
     /** Initial Flutter route that is rendered in a Navigator widget. */
     protected static final String ARG_INITIAL_ROUTE = "initial_route";
+    /** Whether the activity delegate should handle the deeplinking request. */
+    protected static final String ARG_HANDLE_DEEPLINKING = "handle_deeplinking";
     /** Path to Flutter's Dart code. */
     protected static final String ARG_APP_BUNDLE_PATH = "app_bundle_path";
     /** Flutter shell arguments. */
@@ -215,6 +217,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
         private final Class<? extends ThawFlutterFragment> fragmentClass;
         private String dartEntrypoint = "main";
         private String initialRoute = "/";
+        private boolean handleDeeplinking = false;
         private String appBundlePath = null;
         private FlutterShellArgs shellArgs = null;
         private RenderMode renderMode = RenderMode.surface;
@@ -251,6 +254,16 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
         @NonNull
         public NewEngineFragmentBuilder initialRoute(@NonNull String initialRoute) {
             this.initialRoute = initialRoute;
+            return this;
+        }
+
+        /**
+         * Whether to handle the deeplinking from the {@code Intent} automatically if the {@code
+         * getInitialRoute} returns null.
+         */
+        @NonNull
+        public NewEngineFragmentBuilder handleDeeplinking(@NonNull Boolean handleDeeplinking) {
+            this.handleDeeplinking = handleDeeplinking;
             return this;
         }
 
@@ -346,6 +359,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
         protected Bundle createArgs() {
             Bundle args = new Bundle();
             args.putString(ARG_INITIAL_ROUTE, initialRoute);
+            args.putBoolean(ARG_HANDLE_DEEPLINKING, handleDeeplinking);
             args.putString(ARG_APP_BUNDLE_PATH, appBundlePath);
             args.putString(ARG_DART_ENTRYPOINT, dartEntrypoint);
             // TODO(mattcarroll): determine if we should have an explicit FlutterTestFragment instead of
@@ -439,6 +453,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
         private final Class<? extends ThawFlutterFragment> fragmentClass;
         private final String engineId;
         private boolean destroyEngineWithFragment = false;
+        private boolean handleDeeplinking = false;
         private RenderMode renderMode = RenderMode.surface;
         private TransparencyMode transparencyMode = TransparencyMode.transparent;
         private boolean shouldAttachEngineToActivity = true;
@@ -447,7 +462,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
             this(ThawFlutterFragment.class, engineId);
         }
 
-        protected CachedEngineFragmentBuilder(
+        public CachedEngineFragmentBuilder(
                 @NonNull Class<? extends ThawFlutterFragment> subclass, @NonNull String engineId) {
             this.fragmentClass = subclass;
             this.engineId = engineId;
@@ -487,6 +502,16 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
         public CachedEngineFragmentBuilder transparencyMode(
                 @NonNull TransparencyMode transparencyMode) {
             this.transparencyMode = transparencyMode;
+            return this;
+        }
+
+        /**
+         * Whether to handle the deeplinking from the {@code Intent} automatically if the {@code
+         * getInitialRoute} returns null.
+         */
+        @NonNull
+        public CachedEngineFragmentBuilder handleDeeplinking(@NonNull Boolean handleDeeplinking) {
+            this.handleDeeplinking = handleDeeplinking;
             return this;
         }
 
@@ -542,6 +567,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
             Bundle args = new Bundle();
             args.putString(ARG_CACHED_ENGINE_ID, engineId);
             args.putBoolean(ARG_DESTROY_ENGINE_WITH_FRAGMENT, destroyEngineWithFragment);
+            args.putBoolean(ARG_HANDLE_DEEPLINKING, handleDeeplinking);
             args.putString(
                     ARG_FLUTTERVIEW_RENDER_MODE,
                     renderMode != null ? renderMode.name() : RenderMode.surface.name());
@@ -580,7 +606,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
     }
 
     // Delegate that runs all lifecycle and OS hook logic that is common between
-    // FlutterActivity and ThawFlutterFragment. See the FlutterActivityAndFragmentDelegate
+    // FlutterActivity and ThawFlutterFragment. See the ThawFlutterActivityAndFragmentDelegate
     // implementation for details about why it exists.
     @VisibleForTesting /* package */ ThawFlutterActivityAndFragmentDelegate delegate;
 
@@ -612,17 +638,17 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
         delegate.onAttach(context);
     }
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        delegate.onRestoreInstanceState(savedInstanceState);
+    }
+
     @Nullable
     @Override
     public View onCreateView(
             LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return delegate.onCreateView(inflater, container, savedInstanceState);
-    }
-
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        delegate.onActivityCreated(savedInstanceState);
     }
 
     @Override
@@ -672,6 +698,19 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
         if (stillAttachedForEvent("onSaveInstanceState")) {
             delegate.onSaveInstanceState(outState);
         }
+    }
+
+    @Override
+    public void detachFromFlutterEngine() {
+        Log.v(
+                TAG,
+                "ThawFlutterFragment "
+                        + this
+                        + " connection to the engine "
+                        + getFlutterEngine()
+                        + " evicted by another attaching activity");
+        delegate.onDestroyView();
+        delegate.onDetach();
     }
 
     @Override
@@ -795,8 +834,8 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
     }
 
     /**
-     * {@link FlutterActivityAndFragmentDelegate.Host} method that is used by {@link
-     * FlutterActivityAndFragmentDelegate} to obtain Flutter shell arguments when initializing
+     * {@link ThawFlutterActivityAndFragmentDelegate.Host} method that is used by {@link
+     * ThawFlutterActivityAndFragmentDelegate} to obtain Flutter shell arguments when initializing
      * Flutter.
      */
     @Override
@@ -839,26 +878,13 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
         }
     }
 
-    @Override
-    public void detachFromFlutterEngine() {
-        Log.v(
-            TAG,
-            "ThawFlutterFragment "
-                    + this
-                    + " connection to the engine "
-                    + getFlutterEngine()
-                    + " evicted by another attaching activity");
-        delegate.onDestroyView();
-        delegate.onDetach();
-    }
-
     /**
      * Returns the name of the Dart method that this {@code ThawFlutterFragment} should execute to start a
      * Flutter app.
      *
      * <p>Defaults to "main".
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     @NonNull
@@ -873,7 +899,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      * <p>When unspecified, the value is null, which defaults to the app bundle path defined in {@link
      * FlutterLoader#findAppBundlePath()}.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     @NonNull
@@ -886,7 +912,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      *
      * <p>Defaults to {@code null}, which signifies a route of "/" in Flutter.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     @Nullable
@@ -900,7 +926,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      *
      * <p>Defaults to {@link RenderMode#surface}.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     @NonNull
@@ -916,7 +942,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      *
      * <p>Defaults to {@link TransparencyMode#transparent}.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     @NonNull
@@ -953,7 +979,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      * <p>If null is returned then a new default {@link FlutterEngine} will be created to back this
      * {@code ThawFlutterFragment}.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     @Nullable
@@ -986,7 +1012,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
     public PlatformPlugin providePlatformPlugin(
             @Nullable Activity activity, @NonNull FlutterEngine flutterEngine) {
         if (activity != null) {
-            return new PlatformPlugin(getActivity(), flutterEngine.getPlatformChannel());
+            return new PlatformPlugin(getActivity(), flutterEngine.getPlatformChannel(), this);
         } else {
             return null;
         }
@@ -997,8 +1023,8 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      *
      * <p>This method is called after {@link #provideFlutterEngine(Context)}, and after the given
      * {@link FlutterEngine} has been attached to the owning {@code FragmentActivity}. See {@link
-     * io.flutter.embedding.engine.plugins.activity.ActivityControlSurface#attachToActivity(Activity,
-     * Lifecycle)}.
+     * io.flutter.embedding.engine.plugins.activity.ActivityControlSurface#attachToActivity(
+     * ExclusiveAppComponent, Lifecycle)}.
      *
      * <p>It is possible that the owning {@code FragmentActivity} opted not to connect itself as an
      * {@link io.flutter.embedding.engine.plugins.activity.ActivityControlSurface}. In that case, any
@@ -1009,7 +1035,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      * {@link FlutterEngineConfigurator}. Subclasses can override this method if the subclass needs to
      * override the {@code FragmentActivity}'s behavior, or add to it.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
@@ -1037,11 +1063,20 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      * See {@link NewEngineFragmentBuilder#shouldAttachEngineToActivity()} and {@link
      * CachedEngineFragmentBuilder#shouldAttachEngineToActivity()}.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate}
      */
     @Override
     public boolean shouldAttachEngineToActivity() {
         return getArguments().getBoolean(ARG_SHOULD_ATTACH_ENGINE_TO_ACTIVITY);
+    }
+
+    /**
+     * Whether to handle the deeplinking from the {@code Intent} automatically if the {@code
+     * getInitialRoute} returns null.
+     */
+    @Override
+    public boolean shouldHandleDeeplinking() {
+        return getArguments().getBoolean(ARG_HANDLE_DEEPLINKING);
     }
 
     @Override
@@ -1063,7 +1098,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      *
      * <p>Subclasses that override this method must call through to the {@code super} method.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     public void onFlutterUiDisplayed() {
@@ -1082,7 +1117,7 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
      *
      * <p>Subclasses that override this method must call through to the {@code super} method.
      *
-     * <p>Used by this {@code ThawFlutterFragment}'s {@link FlutterActivityAndFragmentDelegate.Host}
+     * <p>Used by this {@code ThawFlutterFragment}'s {@link ThawFlutterActivityAndFragmentDelegate.Host}
      */
     @Override
     public void onFlutterUiNoLongerDisplayed() {
@@ -1101,6 +1136,12 @@ public class ThawFlutterFragment extends Fragment implements ThawFlutterActivity
             return false;
         }
         return true;
+    }
+
+    @Override
+    public boolean popSystemNavigator() {
+        // Hook for subclass. No-op if returns false.
+        return false;
     }
 
     private boolean stillAttachedForEvent(String event) {

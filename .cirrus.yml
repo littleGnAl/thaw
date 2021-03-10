@@ -8,7 +8,7 @@ flutter_container: &flutter_container
 
 flutter_macos_container: &flutter_macos_container
   osx_instance:
-    image: catalina-xcode-12.1
+    image: big-sur-xcode-12.4
 
 android_integratinon_test_task:
   <<: *flutter_container
@@ -33,9 +33,12 @@ android_integratinon_test_task:
 
 ios_integration_test_task:
   <<: *flutter_macos_container
+  # TODO(littlegnal): Remove after the container update to latest flutter version
+  upgrade_flutter_script:
+    - flutter upgrade
   create_ios_simulator_script:
     - xcrun simctl list
-    - xcrun simctl create Flutter-iPhone com.apple.CoreSimulator.SimDeviceType.iPhone-X com.apple.CoreSimulator.SimRuntime.iOS-14-1 | xargs xcrun simctl boot
+    - xcrun simctl create Flutter-iPhone com.apple.CoreSimulator.SimDeviceType.iPhone-X com.apple.CoreSimulator.SimRuntime.iOS-14-4 | xargs xcrun simctl boot
   run_ios_test_script:
     - flutter doctor -v
     - cd thaw_integration_test
