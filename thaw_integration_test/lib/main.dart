@@ -10,7 +10,7 @@
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 // this list of conditions and the following disclaimer in the documentation
 // and/or other materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({Key? key, required this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
