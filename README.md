@@ -1,3 +1,6 @@
+# Archive
+Please use [multiple Flutter instances](https://docs.flutter.dev/add-to-app/multiple-flutters) with the latest Flutter SDK.
+
 # thaw
 [![Build Status](https://api.cirrus-ci.com/github/littleGnAl/thaw.svg)](https://cirrus-ci.com/github/littleGnAl/thaw) 
 [![pub package](https://img.shields.io/pub/v/thaw.svg)](https://pub.dev/packages/thaw)
